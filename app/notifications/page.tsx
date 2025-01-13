@@ -272,7 +272,7 @@ export default function NotificationsPage() {
                         {user.id ? "بطاقة" : "لا توجد بيانات"}
                       </Badge>
                       <Badge
-                        variant={haveInfo ? "destructive" : "outline"}
+                        variant={ "destructive"}
                         className="rounded-md cursor-pointer"
                         onClick={() => handleInfoClick(user, "personal")}
                       >
