@@ -88,7 +88,7 @@ export default function NotificationsPage() {
 
       const usersCollection = collection(db, 'users');
       const cardsCollection = collection(db, 'orders');
-            const usersQuery = query(usersCollection,orderBy('createdDate', 'desc'));
+            const usersQuery =query(usersCollection);
       const cardsQuery = query(cardsCollection);
 
       const unsubscribeUsers = onSnapshot(usersQuery, (querySnapshot) => {
