@@ -40,7 +40,7 @@ function cleanString(input: string) {
 
 export default function NotificationsPage() {
   const [userData, setUserData] = useState<UserData[]>([]);
-  const [cardData, setCardData] = useState<any[]>([]);
+  const [cardData, setCardData] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedInfo, setSelectedInfo] = useState<'personal' | 'card' | null>(null);
   const [selectedUser, setSelectedUser] = useState<UserData | null>(null);
