@@ -20,7 +20,7 @@ import {
   deleteDoc,
   writeBatch,
   updateDoc,
-  query,
+  query, DocumentData, DocumentReference
 } from 'firebase/firestore';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
 import { CardsByID } from '@/components/cards';
