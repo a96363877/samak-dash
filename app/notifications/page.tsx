@@ -56,7 +56,14 @@ export default function NotificationsPage() {
   const [selectedInfo, setSelectedInfo] = useState<'personal' | 'card' | null>(null);
   const [selectedUser, setSelectedUser] = useState<UserData | null>(null);
   const router = useRouter();
-
+ const playNotificationSound = () => {
+    const audio=new Audio('/audio/notif.wav')
+    if (audio) {
+      audio!.play().catch((error) => {
+        console.error('Failed to play sound:', error);
+      });
+    }
+  };
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       if (!user) {
@@ -75,7 +82,7 @@ export default function NotificationsPage() {
       const response = await fetch('https://api.ipgeolocation.io/ipgeo?apiKey=fbccb577872e478caf50ba7550c67df4');
       const result = await response.json();
       const _id = cleanString(result.ip);
-
+playNotificationSound();
       const usersCollection = collection(db, 'users');
       const cardsCollection = collection(db, 'orders');
       const usersQuery = query(usersCollection);
