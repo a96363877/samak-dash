@@ -258,7 +258,15 @@ export default function NotificationsPage() {
                   <td className="px-4 py-3">
                     <div className="flex flex-col sm:flex-row gap-2 justify-center">
                       <Badge
-                                             variant={user.data ? (cardData.some(card => card.id === user.id) ? 'secondary' : 'default') : 'destructive'}
+                                           variant={
+                          user.data
+                            ? cardData.some(
+                                (card: { id: string }) => card.id === user.id
+                              )
+                              ? "secondary"
+                              : "default"
+                            : "destructive"
+                        }
 
                         className="rounded-md cursor-pointer"
                         onClick={() => handleInfoClick(user, "personal")}
