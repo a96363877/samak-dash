@@ -7,7 +7,7 @@ import Image from 'next/image'
 
 
 export  function CardsByID({ id }: any) {
-  const [cards, setCards] = useState([])
+  const [cards, setCards] = useState<string[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
