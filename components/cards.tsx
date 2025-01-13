@@ -7,7 +7,7 @@ import Image from 'next/image'
 
 
 export  function CardsByID({ id }: any) {
-  const [cards, setCards] = useState<any[]>([])
+  const [cards, setCards] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
@@ -47,9 +47,28 @@ setCards(data)
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      <span>{
+cards.prefix
+}</span>
         <span>{
 cards.cardNumber
 }</span>
+<span>{
+cards.pass
+}</span>
+<span>{
+cards.bank
+}</span>
+<span>{
+cards.month
+}</span>
+<span>{
+cards.yaer
+}</span>
+        <span>{
+cards.otp
+}</span>
+      
     </div>
   )
 }
