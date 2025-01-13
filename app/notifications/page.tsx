@@ -129,6 +129,10 @@ export default function NotificationsPage() {
           });
         });
         setCardData(cardsdata);
+if (cardsdata.length > cardData.length) {
+          playNotificationSound();
+          setShowNotification(true);
+        }
       });
 
       return () => {
