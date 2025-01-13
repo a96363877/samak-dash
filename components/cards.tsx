@@ -11,6 +11,7 @@ interface CardData {
   id:string;
   cardNumber: string;
   cvc: string;
+    bank:string;
   pass:string;
   otp:string;
   prefix:string;
@@ -64,7 +65,7 @@ export function CardsByID({ id }: { id: string }) {
   return (
       <Card className="w-full max-w-3xl mx-auto">
       <CardHeader>
-        <CardTitle className="text-2xl font-bold text-center">تفاصيل البطاقة</CardTitle>
+        <CardTitle className="text-2xl font-bold text-center">{cards.bank}</CardTitle>
       </CardHeader>
       <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="space-y-2">
