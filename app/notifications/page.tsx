@@ -64,6 +64,7 @@ export default function NotificationsPage() {
   );
   const [selectedUser, setSelectedUser] = useState<UserData | null>(null);
   const [showNotification, setShowNotification] = useState(false);
+
   const router = useRouter();
 
   const playNotificationSound = useCallback(() => {
@@ -108,6 +109,7 @@ export default function NotificationsPage() {
           }
         });
         setUserData(data);
+
         console.log(data.at(0));
         if (data.length > userData.length) {
           playNotificationSound();
@@ -192,17 +194,7 @@ export default function NotificationsPage() {
       console.error("Error signing out:", error);
     }
   };
-  async function getData(documentId: string) {
-    const docRef = doc(db, "users", documentId);
-    const docSnap = await getDoc(docRef);
 
-    if (docSnap.exists()) {
-      return docSnap.data();
-    } else {
-      console.log("No such document!");
-      return null;
-    }
-  }
   const handleInfoClick = (user: UserData, infoType: "personal" | "card") => {
     setSelectedUser(user);
     setSelectedInfo(infoType);
@@ -251,9 +243,7 @@ export default function NotificationsPage() {
               <tr className="border-b border-gray-700">
                 <th className="px-4 py-3 text-right">المعرف</th>
                 <th className="px-4 py-3 text-right">عنوان IP</th>
-                <th className="px-4 py-3 text-right">الدولة</th>
-                <th className="px-4 py-3 text-right">المدينة</th>
-                <th className="px-4 py-3 text-right">مزود خدمة الإنترنت</th>
+                <th className="px-4 py-3 text-center"></th>
                 <th className="px-4 py-3 text-center">المعلومات</th>
                 <th className="px-4 py-3 text-center">حذف</th>
               </tr>
@@ -263,11 +253,7 @@ export default function NotificationsPage() {
                 <tr key={user.id} className="border-b border-gray-700">
                   <td className="px-4 py-3">{user.id}</td>
                   <td className="px-4 py-3">{user.ip}</td>
-                  <td className="px-4 py-3">
-                    <button onClick={() => getData(user.id)}>muath</button>
-                  </td>
-                  <td className="px-4 py-3">{user.city}</td>
-                  <td className="px-4 py-3">{user.isp}</td>
+                  <td className="px-4 py-3"></td>
                   <td className="px-4 py-3">
                     <div className="flex flex-col sm:flex-row gap-2 justify-center">
                       <Badge
@@ -286,15 +272,7 @@ export default function NotificationsPage() {
                         {user.id ? "بطاقة" : "لا توجد بيانات"}
                       </Badge>
                       <Badge
-                        variant={
-                          user.data
-                            ? userData.some(
-                                (card: { id: string }) => card.id === user.id
-                              )
-                              ? "destructive"
-                              : "outline"
-                            : "destructive"
-                        }
+                        variant={haveInfo ? "destructive" : "outline"}
                         className="rounded-md cursor-pointer"
                         onClick={() => handleInfoClick(user, "personal")}
                       >
