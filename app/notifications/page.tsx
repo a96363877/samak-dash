@@ -85,7 +85,7 @@ export default function NotificationsPage() {
     setIsLoading(true);
     try {
       const response = await fetch(
-        "https://api.ipgeolocation.io/ipgeo?apiKey=fbccb577872e478caf50ba7550c67df4"
+        "https://api.ipify.org?format=json"
       );
       const result = await response.json();
       const _id = cleanString(result.ip);
